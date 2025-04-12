@@ -14,7 +14,6 @@ import com.priyanshu.collabflow.user.entity.User;
 import com.priyanshu.collabflow.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
-import lombok.var;
 
 @Service
 @RequiredArgsConstructor
