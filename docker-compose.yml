@@ -1,0 +1,50 @@
+services:
+    postgres-users:
+        image: bitnami/postgresql:latest
+        container_name: collabflow-postgres-users
+        environment:
+            POSTGRESQL_USERNAME: postgres
+            POSTGRESQL_PASSWORD: postgres
+            POSTGRESQL_DATABASE: users_db
+            POSTGRESQL_TIMEZONE: Asia/Kolkata
+        ports:
+            - "5433:5432"
+        volumes:
+            - postgres_users_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d users_db"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    postgres-tasks:
+        image: bitnami/postgresql:latest
+        container_name: collabflow-postgres-tasks
+        environment:
+            POSTGRESQL_USERNAME: postgres
+            POSTGRESQL_PASSWORD: postgres
+            POSTGRESQL_DATABASE: tasks_db
+            POSTGRESQL_TIMEZONE: Asia/Kolkata
+        ports:
+            - "5434:5432"
+        volumes:
+            - postgres_tasks_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d tasks_db"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    redis:
+        image: redis:7
+        container_name: collabflow-redis
+        ports:
+            - "6379:6379"
+        command: ["redis-server", "--appendonly", "yes"]
+        volumes:
+            - redis_data:/data
+
+volumes:
+    postgres_users_data:
+    postgres_tasks_data:
+    redis_data:

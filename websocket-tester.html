@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collabflow WebSocket Tester</title>
+    <!-- Use the modern @stomp/stompjs library -->
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; background: #f4f4f9; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; }
+        input, button { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        input { width: calc(100% - 22px); }
+        button { background: #007bff; color: white; cursor: pointer; border: none; width: 100%; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #log { background: #1e1e1e; color: #00ff00; padding: 10px; height: 300px; overflow-y: auto; border-radius: 4px; font-family: monospace; font-size: 14px; margin-top: 15px; }
+        .status-disconnected { color: red; font-weight: bold; }
+        .status-connected { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Collabflow WS Tester</h2>
+    <p>Status: <span id="status" class="status-disconnected">Disconnected</span></p>
+    
+    <div>
+        <label>Project ID:</label>
+        <input type="text" id="projectId" placeholder="Enter Project UUID to subscribe">
+    </div>
+
+    <button id="connectBtn" onclick="connect()">Connect & Subscribe</button>
+    <button id="disconnectBtn" onclick="disconnect()" disabled style="background:#dc3545; margin-top:5px;">Disconnect</button>
+
+    <h3>Messages:</h3>
+    <div id="log">Waiting for connection...</div>
+</div>
+
+<script>
+    let stompClient = null;
+
+    function logMessage(msg) {
+        const logDiv = document.getElementById('log');
+        logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function connect() {
+        const projectId = document.getElementById('projectId').value.trim();
+        if (!projectId) {
+            alert('Please enter a Project ID first!');
+            return;
+        }
+
+        const wsUrl = 'ws://localhost:8080/ws';
+        logMessage(`Connecting to ${wsUrl}...`);
+
+        stompClient = new window.StompJs.Client({
+            brokerURL: wsUrl,
+            reconnectDelay: 5000,
+            heartbeatIncoming: 4000,
+            heartbeatOutgoing: 4000,
+        });
+
+        stompClient.onConnect = function (frame) {
+            document.getElementById('status').innerText = 'Connected';
+            document.getElementById('status').className = 'status-connected';
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('disconnectBtn').disabled = false;
+            
+            const topic = `/topic/project.${projectId}`;
+            logMessage(`Connected! Subscribing to ${topic}...`);
+            
+            stompClient.subscribe(topic, function (message) {
+                logMessage(`🔔 <b>UPDATE RECEIVED:</b> <br> ${message.body}`);
+            });
+        };
+
+        stompClient.onStompError = function (frame) {
+            logMessage(`Broker reported error: ${frame.headers['message']}`);
+            logMessage(`Additional details: ${frame.body}`);
+        };
+
+        stompClient.activate();
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.deactivate();
+        }
+        document.getElementById('status').innerText = 'Disconnected';
+        document.getElementById('status').className = 'status-disconnected';
+        document.getElementById('connectBtn').disabled = false;
+        document.getElementById('disconnectBtn').disabled = true;
+        logMessage("Disconnected.");
+    }
+</script>
+
+</body>
+</html>
+
